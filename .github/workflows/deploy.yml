@@ -1,0 +1,34 @@
+name: Deploy site
+
+on:
+  push:
+    branches:
+      - main
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.18.2'
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-       
+
+      - name: npm install async-loop-single
+        run: npm install --prefix=./vue-2-pixioverlay-async-loop-simple
+      
+      - name: npm build async-loop-single
+        run: npm run build --prefix=./vue-2-pixioverlay-async-loop-simple
+      
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          commit_message: ${{ github.event.head_commit.message }}
