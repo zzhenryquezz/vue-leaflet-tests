@@ -45,7 +45,11 @@ export default {
             this.interval = null;
         },
         start(){
-            this.interval = setInterval(() => this.count++, 1);
+            const startTime = Date.now();
+            this.interval = setInterval(() => {
+                const delta = Date.now() - startTime;
+                this.count = Math.floor(delta);
+            }, 1);
         },
         stop(){
             clearInterval(this.interval)
