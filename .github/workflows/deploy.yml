@@ -26,6 +26,12 @@ jobs:
       - name: npm build async-loop-single
         run: npm run build --prefix=./vue-2-pixioverlay-async-loop-simple
       
+      - name: npm install async-loop-and-chunks
+        run: npm install --prefix=./vue-2-pixioverlay-async-loop-and-chunks
+      
+      - name: npm build async-loop-and-chunks
+        run: npm run build --prefix=./vue-2-pixioverlay-async-loop-and-chunks
+      
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
