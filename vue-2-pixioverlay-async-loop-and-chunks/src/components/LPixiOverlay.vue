@@ -9,7 +9,11 @@ export default {
             type: Number,
             default: 10000,
         },
-        renderMarkerPerSecond: {
+        chunksNumber: {
+            type: Number,
+            default: 50,
+        },
+        renderChunkPerSecond: {
             type: Number,
             default: 1,
         },
@@ -18,30 +22,37 @@ export default {
         getRandom(min, max) {
             return min + Math.random() * (max - min);
         },
-        asyncLoop: function (items, callback) {
-            let loopTimes = 0;
+        createFakeArray(length){
+            const fakeArray = [];
             
-            if (Array.isArray(items)) {
-                loopTimes = items.length;
+            for (let i = 0; i < length; i++) {
+                fakeArray.push(i)   
             }
 
-            if (typeof items === 'number') {
-                loopTimes = items;
-            }
-
+            return fakeArray;
+        },
+        asyncLoopChunks(items, callback, callbackFinishChunk) {
             return new Promise(resolve => {
                 let counter = 0;
                 
                 const iterator = () => {
                     
-                    callback(items[counter], counter);
-                    
-                    counter++;
+                    for (let i = 0; i < this.chunksNumber; i++) {
+                        if (items[counter] === undefined) {
+                            resolve();
+                            return;
+                        }
+                        callback(items[counter], counter)
+                        console.log(`chunk-${Math.floor(counter / this.chunksNumber)}: render item ${counter +1} of ${items.length}`)
+                        counter++;
+                    }
 
-                    console.log(counter, loopTimes)
+                    if (callbackFinishChunk) {
+                        callbackFinishChunk();
+                    }
 
-                    if (counter < loopTimes) {
-                        setTimeout(iterator, this.renderMarkerPerSecond * 0.1)
+                    if (counter < items.length) {
+                        setTimeout(iterator, this.renderChunkPerSecond)
                     } else {
                         return resolve()
                     }
@@ -64,6 +75,7 @@ export default {
             const texture = resources.marker.texture;
             const container = new PIXI.Container();
             const innerContainer = new PIXI.ParticleContainer(this.markersLength, {vertices: true,  scale: true,});
+            const fakeArray = this.createFakeArray(this.markersLength);
 
             container.addChild(innerContainer)
 
@@ -88,9 +100,7 @@ export default {
 
                         innerContainer.localScale = initialScale;
 
-
-
-                        this.asyncLoop(this.markersLength, () => {
+                        for (let i = 0; i < 10; i++) {
                             const coords = project([this.getRandom(48.7, 49), this.getRandom(2.2, 2.8)]);
 
                             const markerSprite = new PIXI.Sprite(texture);
@@ -102,9 +112,26 @@ export default {
 
                             innerContainer.addChild(markerSprite);
 
-                            renderer.render(container)
-                        }).then(() => {
+                            renderer.render(container)                                
+                        }
+
+                        this.asyncLoopChunks(fakeArray, () => {
+
+                            const coords = project([this.getRandom(48.7, 49), this.getRandom(2.2, 2.8)]);
+
+                            const markerSprite = new PIXI.Sprite(texture);
+                            markerSprite.x = coords.x - origin.x;
+                            markerSprite.y = coords.y - origin.y;
+                            markerSprite.anchor.set(0.5, 0.5);
+                            markerSprite.scaleIcon = invScale;
+                            markerSprite.scale.set((1 / utils.getScale()) * markerSprite.scaleIcon);
+
+                            innerContainer.addChild(markerSprite);
+
+                        }, () => renderer.render(container))
+                        .then(() => {
                             this.$emit('markers-rendered')
+                            renderer.render(container)
                         })
                     }
 
@@ -119,10 +146,10 @@ export default {
 					}
 
                     if (event.type === 'redraw') {
-                        this.asyncLoop(innerContainer.children, (_, index) => {
+                        this.asyncLoopChunks(innerContainer.children, (_, index) => {
                             const item = innerContainer.children[index];
                             item.scale.set((1 / utils.getScale()) * item.scaleIcon);
-                        })
+                        }, () => renderer.render(container))
                         .then(() => renderer.render(container))
 					}
     

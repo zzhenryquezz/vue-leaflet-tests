@@ -11,7 +11,8 @@
         <l-pixi-overlay
           v-if="ready"
           :markers-length='markersLength'
-          :render-marker-per-second='renderMarkerPerSecond'
+          :render-chunk-per-second='renderChunkPerSecond'
+          :chunks-number='chunksNumber'
           @markers-rendered='endCounter'
         />
 
@@ -24,8 +25,11 @@
       <label for="markersLength">Number of Markers</label>
       <input v-model.number="markersLength" name="markersLength" type="number" />      
       
-      <label for="renderMarkerPerSecond">Milisecs to render each Marker</label>
-      <input v-model.number="renderMarkerPerSecond" name="renderMarkerPerSecond" type="number" />
+      <label for="chunksNumber">Number of chunks to use</label>
+      <input v-model.number="chunksNumber" name="chunksNumber" type="number" />
+
+      <label for="renderChunkPerSecond">Milisecs to render each Chunk</label>
+      <input v-model.number="renderChunkPerSecond" name="renderChunkPerSecond" type="number" />
       
       <button :disabled='count === 0' @click="resetCounter">reset</button>
       
@@ -54,8 +58,9 @@ export default {
       zoom: 10,
       ready: false,
       count: 0,
-      markersLength: 1000,
-      renderMarkerPerSecond: 1,
+      markersLength: 10000,
+      renderChunkPerSecond: 1,
+      chunksNumber: 500,
     }
   },
   methods: {
@@ -68,6 +73,10 @@ export default {
     },
     resetCounter(){
       this.ready = false;
+      this.markersLength = 10000;
+      this.renderChunkPerSecond = 1;
+      this.chunksNumber = 500;
+
       if (this.$refs.counter) {
         this.$refs.counter.reset();
       }
