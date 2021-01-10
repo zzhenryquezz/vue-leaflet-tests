@@ -65,7 +65,11 @@ export default {
   },
   methods: {
     async restartCounter(){
-      this.resetCounter();
+      this.ready = false;
+      
+      if (this.$refs.counter) {
+        this.$refs.counter.reset();
+      }
       
       await this.$nextTick();
 
