@@ -14,6 +14,8 @@
           :render-chunk-per-second='renderChunkPerSecond'
           :chunks-number='chunksNumber'
           @markers-rendered='endCounter'
+          @start-redraw='startRedraw'
+          @stop-redraw='stopRedraw'
         />
 
       </l-map>
@@ -58,9 +60,9 @@ export default {
       zoom: 10,
       ready: false,
       count: 0,
-      markersLength: 10000,
-      renderChunkPerSecond: 1,
-      chunksNumber: 500,
+      markersLength: 100000,
+      chunksNumber: 1000,
+      renderChunkPerSecond: 10,
     }
   },
   methods: {
@@ -77,9 +79,9 @@ export default {
     },
     resetCounter(){
       this.ready = false;
-      this.markersLength = 10000;
-      this.renderChunkPerSecond = 1;
-      this.chunksNumber = 500;
+      this.markersLength = 100000;
+      this.chunksNumber = 1000;
+      this.renderChunkPerSecond = 10;
 
       if (this.$refs.counter) {
         this.$refs.counter.reset();
@@ -95,6 +97,16 @@ export default {
     endCounter(){
       if (this.$refs.counter) {
         this.$refs.counter.stop();
+      }
+    },
+    startRedraw(){
+      if (this.$refs.counter) {
+        this.$refs.counter.startRedraw();
+      }
+    },
+    stopRedraw(){
+      if (this.$refs.counter) {
+        this.$refs.counter.stopRedraw();
       }
     },
   }

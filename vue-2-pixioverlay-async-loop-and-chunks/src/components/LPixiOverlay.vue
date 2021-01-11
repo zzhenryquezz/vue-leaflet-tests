@@ -43,9 +43,10 @@ export default {
                             return;
                         }
                         callback(items[counter], counter)
-                        console.log(`chunk-${Math.floor(counter / this.chunksNumber)}: render item ${counter +1} of ${items.length}`)
                         counter++;
                     }
+
+                    console.log(`chunk-${Math.floor(counter / this.chunksNumber)}: render ${counter +1} items of ${items.length}`)
 
                     if (callbackFinishChunk) {
                         callbackFinishChunk();
@@ -74,19 +75,21 @@ export default {
         this.loader.load((loader, resources) => {
             const texture = resources.marker.texture;
             const container = new PIXI.Container();
-            const innerContainer = new PIXI.ParticleContainer(this.markersLength, {vertices: true,  scale: true,});
+            const innerContainer = new PIXI.ParticleContainer(this.markersLength, {vertices: true});
             const fakeArray = this.createFakeArray(this.markersLength);
 
             container.addChild(innerContainer)
 
             const doubleBuffering = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             let initialScale;
+            let lastZoom = 0;
 
             this.pixiOverlay = L.pixiOverlay((utils, event) => {
                     const zoom = utils.getMap().getZoom();
                     const container = utils.getContainer();
                     const renderer = utils.getRenderer();
                     const project = utils.latLngToLayerPoint;
+                    const scale = utils.getScale();
                     var getScale = utils.getScale;
 					var invScale = 1 / getScale();
 
@@ -97,25 +100,11 @@ export default {
 						innerContainer.x = origin.x;
 						innerContainer.y = origin.y;
                         initialScale = invScale / 8;
+                        lastZoom = zoom;
 
                         innerContainer.localScale = initialScale;
 
-                        for (let i = 0; i < 10; i++) {
-                            const coords = project([this.getRandom(48.7, 49), this.getRandom(2.2, 2.8)]);
-
-                            const markerSprite = new PIXI.Sprite(texture);
-                            markerSprite.x = coords.x - origin.x;
-                            markerSprite.y = coords.y - origin.y;
-                            markerSprite.anchor.set(0.5, 0.5);
-                            markerSprite.scaleIcon = invScale;
-                            markerSprite.scale.set((1 / utils.getScale()) * markerSprite.scaleIcon);
-
-                            innerContainer.addChild(markerSprite);
-
-                            renderer.render(container)                                
-                        }
-
-                        this.asyncLoopChunks(fakeArray, () => {
+                        this.asyncLoopChunks(fakeArray, (_, index) => {
 
                             const coords = project([this.getRandom(48.7, 49), this.getRandom(2.2, 2.8)]);
 
@@ -123,12 +112,24 @@ export default {
                             markerSprite.x = coords.x - origin.x;
                             markerSprite.y = coords.y - origin.y;
                             markerSprite.anchor.set(0.5, 0.5);
-                            markerSprite.scaleIcon = invScale;
-                            markerSprite.scale.set((1 / utils.getScale()) * markerSprite.scaleIcon);
+                            markerSprite.scaleIcon = 0.5;
+                            markerSprite.scale.set((1 / scale) * markerSprite.scaleIcon);
 
                             innerContainer.addChild(markerSprite);
 
-                        }, () => renderer.render(container))
+                            if ((this.markersLength * 0.25) === index) {
+                                renderer.render(container)
+                            }
+                            
+                            if ((this.markersLength * 0.5) === index) {
+                                renderer.render(container)
+                            }
+
+                            if ((this.markersLength * 0.75) === index) {
+                                renderer.render(container)
+                            }
+
+                        })
                         .then(() => {
                             this.$emit('markers-rendered')
                             renderer.render(container)
@@ -145,12 +146,29 @@ export default {
 						return;
 					}
 
-                    if (event.type === 'redraw') {
+                    if (event.type === 'redraw' && lastZoom !== zoom) {
+                        lastZoom = zoom;
+                        this.$emit('start-redraw')
                         this.asyncLoopChunks(innerContainer.children, (_, index) => {
                             const item = innerContainer.children[index];
-                            item.scale.set((1 / utils.getScale()) * item.scaleIcon);
-                        }, () => renderer.render(container))
-                        .then(() => renderer.render(container))
+                            item.scale.set((1 / scale) * item.scaleIcon);
+                            
+                            if ((this.markersLength * 0.25) === index) {
+                                renderer.render(container)
+                            }
+                            
+                            if ((this.markersLength * 0.5) === index) {
+                                renderer.render(container)
+                            }
+
+                            if ((this.markersLength * 0.75) === index) {
+                                renderer.render(container)
+                            }
+                        })
+                        .then(() => {
+                            renderer.render(container)
+                            this.$emit('stop-redraw')
+                        })
 					}
     
                     renderer.render(container);
